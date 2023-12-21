@@ -1,44 +1,120 @@
-name: 'Terraform to launch aws resources'
+# name: 'Terraform to launch aws resources'
+
+# on:
+#   push:
+#     branches: [ "main" ]
+#   pull_request:
+
+# permissions:
+#   contents: read
+
+# jobs:
+#   terraform:
+#     name: 'Terraform'
+#     env:
+#      AWS_ACCESS_KEY_ID1: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#      AWS_SECRET_ACCESS_KEY1: ${{ secrets.AWS_SECRET_ACCESS_KEY_ID }}
+#     runs-on: ubuntu-latest
+#     environment: production
+
+#     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+#     defaults:
+#       run:
+#         shell: bash
+
+#     steps:
+#     # Checkout the repository to the GitHub Actions runner
+#     - name: Checkout
+#       uses: actions/checkout@v3
+
+#     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v1
+#     #   # with:
+#     #   #   cli_config_credentials_token: ${{ secrets.TF_API_SECRET1 }}
+
+
+#     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+#     - name: Terraform Init
+#       uses: hashicorp/terraform-github-actions@master
+#       run: terraform init -input=false
+
+#     # Generates an execution plan for Terraform
+#     - name: Terraform Plan
+#       uses: hashicorp/terraform-github-actions@master
+#       run: terraform plan -input=false
+
+#       # On push to "main", build or change infrastructure according to Terraform configuration files
+#       # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+#     - name: Terraform Apply
+#       uses: hashicorp/terraform-github-actions@master
+#       run: terraform apply -auto-approve -input=false
+
+name: 'Terraform'
 
 on:
+  workflow_dispatch:
+    inputs:
+      terraform_action:
+        type: choice
+        description: select terraform action
+        options:
+        - apply
+        - destroy
+        required: true
   push:
     branches: [ "main" ]
-  pull_request:
-
-permissions:
-  contents: read
 
 jobs:
   terraform:
     name: 'Terraform'
+    env:
+      # AWS secrets
+      AWS_ACCESS_KEY_ID1: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY1: ${{secrets.AWS_SECRET_ACCESS_KEY_ID }}
+
     runs-on: ubuntu-latest
     environment: production
-
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
 
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
       uses: actions/checkout@v3
 
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_API_SECRET1 }}
-
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      run: terraform init -input=false
-
-    # Generates an execution plan for Terraform
-    - name: Terraform Plan
-      run: terraform plan -input=false
-
-      # On push to "main", build or change infrastructure according to Terraform configuration files
-      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -input=false
+      uses: hashicorp/terraform-github-actions@master
+      with:
+        tf_actions_version: 0.14.3
+        tf_actions_subcommand: 'init'
+        tf_actions_working_dir: '.'
+        tf_actions_comment: true
+        
+    
+    - name: Terraform plan
+      uses: hashicorp/terraform-github-actions@master
+      with:
+        tf_actions_version: 0.14.3
+        tf_actions_subcommand: 'plan'
+        tf_actions_working_dir: '.'
+        tf_actions_comment: true
+        
+      
+    - name: Terraform apply
+      if: ${{ github.event.inputs.terraform_action == 'apply' }}
+      uses: hashicorp/terraform-github-actions@master
+      with:
+        tf_actions_version: 0.14.3
+        tf_actions_subcommand: ${{ github.event.inputs.terraform_action }}
+        tf_actions_working_dir: '.'
+        tf_actions_comment: true
+        
+    
+    - name: Terraform destroy
+      if: ${{ github.event.inputs.terraform_action == 'destroy' }}
+      uses: hashicorp/terraform-github-actions@master
+      with:
+        tf_actions_version: 0.14.3
+        tf_actions_subcommand: ${{ github.event.inputs.terraform_action }}
+        tf_actions_working_dir: '.'
+        tf_actions_comment: true
