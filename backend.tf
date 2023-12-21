@@ -16,9 +16,7 @@ terraform {
     }
   }
 }
-provider "aws" {
-  region = "ap-south-1"
-  # access_key = "AKIA3CVNHILEMHR3ITFQ"
-  # secret_key = "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"
 
-}
+  
+
+
